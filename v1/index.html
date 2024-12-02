@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Pandemic Map</title>
+  <style>
+    #container1 {
+      border: 2px solid #DDF;
+      text-align: center;
+      width: 100%;
+      height: calc(100vh - 200px)
+    }
+  </style>
+</head>
+<body>
+<div style="text-align: center; margin: 0 auto; width: calc(100vw - 100px); ">
+  <h1>Tropical Partners Travel Matrix</h1>
+  <h3 id="country"></h3>
+  <button onclick="new_country()">Random Next Country</button>
+  <br>
+  <br>
+  <div id="container1"></div>
+</div>
+
+<script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+<script src="./datamaps.world.min.js"></script>
+<script src="require.js"></script>
+
+<script>
+  var new_country
+
+  require(['data.js'], function(data) {
+    var travel = data.travel
+    var countries = data.countries
+
+    function do_new_country () {
+      var n = countries.length
+      let i
+      do {
+        i = parseInt(Math.random() * n)
+        country = countries[i]
+      } while (country.coordinates === null);
+
+      console.log(n, i, country.name, country.coordinates)
+
+      series = travel[i]
+      series[i][1] = 0
+
+      var dom = document.getElementById('country')
+      dom.innerHTML = country.name
+
+      // Datamaps expect data in format:
+
+      // { "USA": { "fillColor": "#42a844", numberOfWhatever: 75},
+      //   "FRA": { "fillColor": "#8dc386", numberOfWhatever: 43 } }
+      var dataset = {}
+
+      // We need to colorize every country based on "numberOfWhatever"
+      // colors should be uniq for every value.
+      // For this purpose we create palette(using min/max series-value)
+      var onlyValues = series.map(function(obj) {
+        return obj[1]
+      })
+      var minValue = Math.min.apply(null, onlyValues)
+      var maxValue = Math.max.apply(null, onlyValues)
+
+      // create color palette function
+      // color can be whatever you wish
+      var paletteScale = d3.scale.linear()
+        .domain([minValue, 0, maxValue])
+        .range(['#6F3802', '#EEEEEE', '#02386F']) // blue color
+
+      // fill dataset in appropriate format
+      series.forEach(function(item) { //
+        // item example value ["USA", 70]
+        var iso = item[0],
+          value = item[1]
+        dataset[iso] = {numberOfThings: value, fillColor: paletteScale(value)}
+      })
+
+      dataset[series[i][0]].fillColor = 'red'
+
+      var el = document.getElementById('container1')
+      el.remove()
+
+      var newEl = document.createElement('div')
+      newEl.setAttribute('id', 'container1')
+      document.body.appendChild(newEl)
+
+      // render map
+      var dataMap = new Datamap({
+        element: document.getElementById('container1'),
+        // big world map
+        // projection: 'orthographic',
+        setProjection: function(element) {
+          var coordinates = country.coordinates
+          var projection = d3.geo.orthographic()
+            .scale(300)
+            .clipAngle(90)
+            .rotate([-coordinates[1], -coordinates[0]])
+            // .center(country.coordinates) // always in [East Latitude, North Longitude]
+            .translate([element.offsetWidth / 2, element.offsetHeight / 2])
+          var path = d3.geo.path().projection(projection)
+          return {path: path, projection: projection}
+        },
+        // countries don't listed in dataset will be painted with this color
+        fills: {defaultFill: '#F5F5F5'},
+        data: dataset,
+        geographyConfig: {
+          borderColor: '#DEDEDE',
+          highlightBorderWidth: 2,
+          // don't change color on mouse hover
+          highlightFillColor: function(geo) {
+            return geo['fillColor'] || '#F5F5F5'
+          },
+          // only change border
+          highlightBorderColor: '#B7B7B7',
+          // show desired information in tooltip
+          popupTemplate: function(geo, data) {
+            // don't show tooltip if country don't present in dataset
+            if (!data) {
+              return
+            }
+            // tooltip content
+            return ['<div class="hoverinfo">',
+              '<strong>', geo.properties.name, '</strong>',
+              '<br>Count: <strong>', data.numberOfThings, '</strong>',
+              '</div>'].join('')
+          }
+        }
+      })
+
+      console.log(dataMap)
+    }
+
+    do_new_country()
+
+    new_country = do_new_country
+  })
+</script>
+
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Pandemic Map</title>
+  <style>
+    #container1 {
+      border: 2px solid #DDF;
+      text-align: center;
+      width: 100%;
+      height: calc(100vh - 200px)
+    }
+  </style>
+</head>
+<body>
+<div style="text-align: center; margin: 0 auto; width: calc(100vw - 100px); ">
+  <h1>Tropical Partners Travel Matrix</h1>
+  <h3 id="country"></h3>
+  <button onclick="new_country()">Random Next Country</button>
+  <br>
+  <br>
+</div>
+
+<script src="./d3.v3.min.js"></script>
+<script src="./topojson.v1.min.js"></script>
+<script src="./require.js"></script>
+
+<script>
+  var new_country
+
+  require(['travelData.js', 'world.js'], function(travelData, world) {
+
+    var width = window.innerWidth
+    var height = window.innerHeight
+
+    var RollingGlobe = function(world) {
+      this.world = world
+
+      this.countryFeatures = topojson.feature(world, world.objects.countries).features
+
+      this.countryBorders = topojson.mesh(
+        world, world.objects.countries, function(a, b) {return a !== b})
+
+      this.projection = d3.geo.orthographic()
+        .translate([width / 2, width / 3 + 20])
+        .scale(width / 3)
+        .clipAngle(90)
+        .precision(0.6)
+
+      this.canvas = d3.select('body').append('canvas')
+        .attr('width', width)
+        .attr('height', height)
+
+      this.context = this.canvas.node().getContext('2d')
+
+      this.path = d3.geo.path()
+        .projection(this.projection)
+        .context(this.context)
+
+      this.title = d3.select('h1')
+
+      this.iCountryFromId = {}
+      for (var i = 0; i < this.countryFeatures.length; i += 1) {
+        var countryFeature = this.countryFeatures[i]
+        this.iCountryFromId[countryFeature.id] = i
+      }
+
+      this.colors = []
+      for (var i = 0; i < this.countryFeatures.length; i += 1) {
+        this.colors.push('#ccc')
+      }
+
+      this.values = []
+      for (var i = 0; i < this.countryFeatures.length; i += 1) {
+        this.values.push(null)
+      }
+
+      this.draw = function() {
+        this.context.clearRect(0, 0, width, height)
+
+        for (var i = 0; i < this.countryFeatures.length; i += 1) {
+          color = this.colors[i]
+          this.context.fillStyle = color
+          this.context.beginPath()
+          this.path(this.countryFeatures[i])
+          this.context.fill()
+        }
+
+        // country borders
+        this.context.strokeStyle = '#EEE'
+        this.context.lineWidth = .5
+        this.context.beginPath()
+        this.path(this.countryBorders)
+        this.context.stroke()
+
+        // circle around globe
+        this.context.strokeStyle = '#000'
+        this.context.lineWidth = 2
+        this.context.beginPath()
+        this.path({type: 'Sphere'})
+        this.context.stroke()
+      }
+
+      this.rotateTo = function(r) {
+        this.projection.rotate(r)
+        this.draw()
+      }
+
+      this.resetCountryValues = function(values) {
+        // Colorize every country based on "this.values"
+        // For this purpose we create palette(using min/max series-value)
+        var minValue = Math.min.apply(null, values)
+        var maxValue = Math.max.apply(null, values)
+        var paletteScale = d3.scale.linear()
+          .domain([minValue, 0, maxValue])
+          .range(['#6F3802', '#CCC', '#02386F'])
+
+        for (var i = 0; i < this.countryFeatures.length; i += 1) {
+          if (values[i] == null) {
+            this.colors[i] = '#CCC'
+          } else {
+            this.colors[i] = paletteScale(values[i])
+          }
+        }
+      }
+
+      this.rotateTransition = function(targetR, callback) {
+        var interpolateR = d3.interpolate(this.projection.rotate(), targetR)
+
+        var _this = this
+        function rotate (t) {
+          _this.rotateTo(interpolateR(t))
+        }
+
+        d3.transition()
+          .duration(1250)
+          .tween('rotate', function() {
+            return rotate
+          })
+          .transition()
+          .each('end', callback)
+      }
+
+    }
+
+    var globe = new RollingGlobe(world)
+
+    function loadCountry (iCountry) {
+      var country = travelData.countries[iCountry]
+      var id = country.id
+      var coords = country.coordinates
+      var success = coords && (id in globe.iCountryFromId)
+
+      if (!success) {
+        if (!(country.id in globe.iCountryFromId)) {
+          console.log('Error: country code', country.id, '(', country.name, ')', 'not found in map')
+        }
+        if (!coords) {
+          console.log('Error: coords not found for', country.id, '(', country.name, ')')
+        }
+        return false
+      }
+
+      var toCountries = travelData.travel[iCountry]
+      toCountries.forEach(function(item) { //
+        var value = item[1]
+        var id = item[2]
+        var iCountry = globe.iCountryFromId[id]
+        globe.values[iCountry] = value
+      })
+      globe.title.text(country.name)
+      globe.resetCountryValues(globe.values)
+      globe.targetR = [-coords[1], -coords[0]]
+      globe.colors[globe.iCountryFromId[id]] = '#f00'
+
+      console.log(country.name, coords)
+
+      return true
+    }
+
+    var iCountry = -1
+
+    function transition () {
+      do {
+        iCountry = (iCountry + 1) % travelData.countries.length
+        var success = loadCountry(iCountry)
+      } while (!success)
+      globe.rotateTransition(globe.targetR, transition)
+    }
+
+    transition()
+
+  })
+</script>
+
+</body>
+</html>

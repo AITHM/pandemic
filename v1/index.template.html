@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>Pandemic Map</title>
+  <style>
+    #container1 { border: 2px solid #DDF; }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin: 0 auto; width: calc(100vw - 100px); ">
+    <h1>Tropical Partners Travel Matrix</h1>
+    <div style="text-align: center; width: 100%; height: calc(100vh - 100px);" id="container1"></div>
+  </div>
+
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.9/topojson.min.js"></script>
+  <script src="./datamaps.world.min.js"></script>
+
+<script>
+    // example data from server
+    var series = [["ARE", 48313], ["AFG", -61750], ["ATG", -50144], ["AIA", -226143], ["ALB", 165079], ["ARM", -2582465], ["AGO", 111429], ["ARG", -1322568], ["ASM", 195809], ["AUT", 497733], ["AUS", -159331], ["ABW", -528909], ["AZE", 695168], ["BIH", -931731], ["BRB", 287656], ["BGD", -2327], ["BEL", -142972], ["BFA", 338040], ["BGR", -1053040], ["BHR", 5932330], ["BDI", 404133], ["BEN", -286118], ["BMU", 774847], ["BRN", 1441903], ["BOL", -941298], ["BES", -1264315], ["BRA", -173333], ["BHS", 149131], ["BTN", -36899], ["BWA", 94076], ["BLR", -387114], ["BLZ", -72432], ["CAN", 1121892], ["CCK", 91046], ["COD", -170573], ["CAF", -123551], ["COG", -11052679], ["CHE", 495101], ["CIV", -318388], ["COK", -26651788], ["CHL", -7547146], ["CMR", 10922], ["CHN", 18058], ["COL", 11083092], ["CRI", 389560], ["CUB", -1925200], ["CPV", -967789], ["CUW", -202384], ["CXR", 5136130], ["CYP", 1473845], ["CZE", -4693679], ["DEU", 138355], ["DJI", -368071], ["DNK", -443536], ["DMA", -164761], ["DOM", -428531], ["DZA", -936229], ["ECU", 472771], ["EST", 190879], ["EGY", -1943815], ["ERI", -22399], ["ESP", 2466810], ["ETH", 6132], ["FIN", 19446], ["FJI", -344372], ["FLK", -2558], ["FSM", -17376], ["FRO", 176784], ["FRA", -869284], ["GAB", -74254], ["GBR", -12373], ["GRD", 142735], ["GEO", -1102402], ["GUF", 654828], ["GHA", -109389], ["GIB", 643561], ["GRL", 3410524], ["GMB", 356471], ["GIN", 1711210], ["GLP", -531163], ["GNQ", 14098], ["GRC", 688426], ["GTM", 56305], ["GUM", -1306326], ["GNB", 166295], ["GUY", -62992], ["HKG", -1615816], ["HND", 7218], ["HRV", 32830], ["HTI", -2297784], ["HUN", 91774], ["IDN", -334742], ["IRL", -28253], ["ISR", -191644], ["IND", -40097], ["IRQ", -457379], ["IRN", -43214], ["ISL", -183054], ["ITA", -59311], ["JAM", 496278], ["JOR", -158220], ["JPN", -44161], ["KEN", 25264], ["KGZ", 44454], ["KHM", 429], ["KIR", 100819], ["COM", -997], ["KNA", -18667], ["PRK", 580005], ["KOR", 193512], ["KWT", 334325], ["CYM", 175972], ["KAZ", 211793], ["LAO", -19071], ["LBN", 23281], ["LCA", -44341], ["LKA", 84143], ["LBR", 312268], ["LSO", 29165], ["LTU", 55702], ["LUX", 109814], ["LVA", 201448], ["LBY", -231], ["MAR", 65177], ["MDA", -65888], ["MNE", -65189], ["MDG", 18114], ["MHL", -76487], ["MKD", -1141], ["MLI", 20660], ["MMR", -32276], ["MNG", 16382], ["MAC", 104607], ["MNP", 26320], ["MTQ", 17350], ["MRT", 6889], ["MSR", 284841], ["MLT", -42469], ["MUS", -8369], ["MDV", -15658], ["MWI", 26993], ["MEX", 2768], ["MYS", 2520], ["MOZ", 16006], ["NAM", -7154], ["NCL", 71], ["NER", -4593], ["NGA", -13988], ["NIC", 161902], ["NLD", 39134], ["NOR", -26117], ["NPL", -62910], ["NRU", -1712], ["NIU", 60285], ["NZL", -3037], ["OMN", -15678], ["PAN", -2857], ["PER", -48489], ["PYF", -26979], ["PNG", -10012], ["PHL", -2940], ["PAK", -24427], ["POL", 81624], ["SPM", -3192], ["PRI", 33295], ["PRT", -16340], ["PLW", -3874], ["PRY", 10341], ["QAT", -4268], ["REU", 9993], ["ROU", -35725], ["SRB", 2582], ["RUS", 16973], ["RWA", -14061], ["SAU", 30755], ["SLB", -9], ["SYC", 6400], ["SDN", 25343], ["SWE", -4994], ["SGP", -5890], ["SVN", 51829], ["SVK", 29053], ["SLE", -242], ["SEN", -6382], ["SOM", 21312], ["SUR", 16558], ["SSD", -25622], ["STP", 14834], ["SLV", -472], ["SXM", 94103], ["SYR", 45015], ["SWZ", -158075], ["TCA", -280812], ["TCD", 43121], ["TGO", -3906], ["THA", -46613], ["TJK", -6160], ["TLS", 31115], ["TKM", -34226], ["TUN", -64386], ["TON", 57602], ["TUR", 89925], ["TTO", -220660], ["TUV", -39516], ["TWN", -54844], ["TZA", 6390], ["UKR", -69335], ["UGA", 19970], ["USA", -26078], ["URY", 52089], ["UZB", 10915], ["VCT", -929], ["VEN", -18965], ["VGB", 32717], ["VIR", 43703], ["VNM", 68123], ["VUT", -7884], ["WLF", 2565], ["WSM", -21337], ["YEM", 3349], ["MYT", -7633], ["ZAF", 13867], ["ZMB", 12675], ["ZWE", 4912]]
+
+    // Datamaps expect data in format:
+
+    // { "USA": { "fillColor": "#42a844", numberOfWhatever: 75},
+    //   "FRA": { "fillColor": "#8dc386", numberOfWhatever: 43 } }
+    var dataset = {};
+
+    // We need to colorize every country based on "numberOfWhatever"
+    // colors should be uniq for every value.
+    // For this purpose we create palette(using min/max series-value)
+    var onlyValues = series.map(function(obj){ return obj[1]; });
+    var minValue = Math.min.apply(null, onlyValues);
+    var maxValue = Math.max.apply(null, onlyValues);
+
+    // create color palette function
+    // color can be whatever you wish
+    var paletteScale = d3.scale.linear()
+            .domain([minValue, 0, maxValue])
+            .range(["#6F3802", "#EEEEEE", "#02386F"]); // blue color
+
+    // fill dataset in appropriate format
+    series.forEach(function(item){ //
+        // item example value ["USA", 70]
+        var iso = item[0],
+                value = item[1];
+        dataset[iso] = { numberOfThings: value, fillColor: paletteScale(value) };
+    });
+
+    // render map
+    new Datamap({
+        element: document.getElementById('container1'),
+        projection: 'mercator', // big world map
+        // countries don't listed in dataset will be painted with this color
+        fills: { defaultFill: '#F5F5F5' },
+        data: dataset,
+        geographyConfig: {
+            borderColor: '#DEDEDE',
+            highlightBorderWidth: 2,
+            // don't change color on mouse hover
+            highlightFillColor: function(geo) {
+                return geo['fillColor'] || '#F5F5F5';
+            },
+            // only change border
+            highlightBorderColor: '#B7B7B7',
+            // show desired information in tooltip
+            popupTemplate: function(geo, data) {
+                // don't show tooltip if country don't present in dataset
+                if (!data) { return ; }
+                // tooltip content
+                return ['<div class="hoverinfo">',
+                    '<strong>', geo.properties.name, '</strong>',
+                    '<br>Count: <strong>', data.numberOfThings, '</strong>',
+                    '</div>'].join('');
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
